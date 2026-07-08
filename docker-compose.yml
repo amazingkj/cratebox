@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: cratebox_db
+    ports:
+      - "5433:5432"   # 5432는 기존 postgres_db 컨테이너가 사용 중
+    environment:
+      POSTGRES_USER: cratebox
+      POSTGRES_PASSWORD: cratebox
+      POSTGRES_DB: cratebox
+    volumes:
+      - cratebox_pgdata:/var/lib/postgresql/data
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql
+
+volumes:
+  cratebox_pgdata:

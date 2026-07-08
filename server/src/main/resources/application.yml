@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: cratebox
+  datasource:
+    url: jdbc:postgresql://localhost:5433/cratebox
+    username: cratebox
+    password: cratebox
+  flyway:
+    enabled: true
+
+server:
+  port: 8087   # 8080은 이 PC의 다른 서비스가 사용 중
+  error:
+    include-message: always
+
+cratebox:
+  admin-password: ${CRATEBOX_ADMIN_PASSWORD:admin1234!}

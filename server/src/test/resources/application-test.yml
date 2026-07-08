@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/cratebox_test
+    username: cratebox
+    password: cratebox
+  flyway:
+    clean-disabled: false   # 테스트는 매 컨텍스트마다 clean 후 migrate
+
+cratebox:
+  admin-password: admin1234!
