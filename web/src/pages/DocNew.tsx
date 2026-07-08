@@ -52,6 +52,22 @@ const LOC_RULE: Record<DocType, { fromWh?: boolean; toWh?: boolean; store?: 'fro
   RETURN_TO_OWNER: { fromWh: true },
 }
 
+// 문서 유형별 한 줄 안내 (처음 쓰는 사람이 유형을 고를 수 있도록)
+const DOC_TYPE_DESC: Record<DocType, string> = {
+  PURCHASE_IN: '기획사에서 음반을 사입(매입)해 창고에 넣습니다. 기획사에 줄 매입대금이 잡힙니다.',
+  PURCHASE_RETURN: '사입했던 음반을 기획사에 반품합니다. 매입대금에서 차감됩니다.',
+  SALE_OUT: '출고 기준 거래처에 판매 출고합니다. 출고 즉시 받을 돈(매출)이 잡힙니다.',
+  CUSTOMER_RETURN: '거래처에서 반품이 들어옵니다. 받을 돈에서 차감됩니다.',
+  CONSIGN_PLACE: '판매분 기준 거래처 매장에 진열용으로 내보냅니다. 이 시점에는 매출이 아닙니다.',
+  SALES_REPORT: '매장 진열분 중 실제 판매된 수량을 보고받아 매출로 잡습니다.',
+  CONSIGN_RECALL: '매장에 진열했던 미판매분을 창고로 되가져옵니다.',
+  TRANSFER: '창고 사이의 재고 이동입니다. 정산에는 영향이 없습니다.',
+  ADJUST: '재고 실사 결과와 장부의 차이를 ± 수량으로 맞춥니다.',
+  OPENING: '시스템 도입 시점의 기초 재고를 등록합니다.',
+  CONSIGN_IN: '기획사 소유 음반을 위탁으로 받아 창고에 보관합니다. 판매되기 전까지는 정산이 생기지 않습니다.',
+  RETURN_TO_OWNER: '보관 중인 위탁 재고를 기획사에 돌려보냅니다.',
+}
+
 interface LineDraft { skuId: string; qty: string; unitPrice: string; owner: string; note: string }
 const emptyLine = (): LineDraft => ({ skuId: '', qty: '', unitPrice: '', owner: '', note: '' })
 
@@ -133,7 +149,7 @@ export default function DocNew() {
 
   return (
     <div className="space-y-4 max-w-3xl">
-      <h1 className="text-xl font-bold text-gray-900">새 문서</h1>
+      <h1 className="text-xl font-bold text-stone-900">새 문서</h1>
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="문서 유형">
@@ -154,6 +170,10 @@ export default function DocNew() {
           <Field label="일자">
             <Input type="date" value={occurredOn} onChange={(e) => setOccurredOn(e.target.value)} />
           </Field>
+
+          <p className="sm:col-span-2 text-xs text-stone-500 bg-stone-50 border border-stone-100 rounded px-3 py-2">
+            {DOC_TYPE_DESC[docType]}
+          </p>
 
           {needsParty && (
             <Field label={LABEL_DOCS.includes(docType) ? '기획사' : '거래처'}>
@@ -204,8 +224,8 @@ export default function DocNew() {
       </Card>
 
       <Card
-        title="라인"
-        actions={<Button variant="ghost" onClick={() => setLines((ls) => [...ls, emptyLine()])}>+ 라인 추가</Button>}
+        title="품목"
+        actions={<Button variant="ghost" onClick={() => setLines((ls) => [...ls, emptyLine()])}>+ 품목 추가</Button>}
       >
         <div className="space-y-2">
           {lines.map((l, i) => {
@@ -229,7 +249,7 @@ export default function DocNew() {
                     <option value="">
                       {consignDoc && !counterpartyId ? '기획사를 먼저 선택…'
                         : consignDoc && skuOptions.length === 0 ? '위탁 계약 앨범이 없습니다'
-                        : 'SKU 선택…'}
+                        : '품목 선택…'}
                     </option>
                     {skuOptions.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -253,7 +273,7 @@ export default function DocNew() {
                     />
                   </div>
                 )}
-                <div className={`col-span-6 sm:col-span-3 ${ownerable ? '' : 'text-xs text-gray-400'}`}>
+                <div className={`col-span-6 sm:col-span-3 ${ownerable ? '' : 'text-xs text-stone-400'}`}>
                   {ownerable && sku ? (
                     <Select value={l.owner} onChange={(e) => setLine(i, { owner: e.target.value })}>
                       <option value="">자사 재고</option>
@@ -264,7 +284,7 @@ export default function DocNew() {
                   )}
                 </div>
                 <div className="col-span-3 sm:col-span-1 text-right">
-                  <button className="text-gray-400 hover:text-red-500 text-sm" onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>
+                  <button className="text-stone-400 hover:text-red-500 text-sm" onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>
                     삭제
                   </button>
                 </div>
@@ -273,7 +293,7 @@ export default function DocNew() {
           })}
         </div>
         {NEGATIVE_OK.includes(docType) && (
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-stone-400 mt-2">
             {docType === 'SALES_REPORT' ? '판매 취소 보고는 음수 수량으로 입력합니다' : '실사 차이는 ± 수량으로 입력합니다'}
           </p>
         )}

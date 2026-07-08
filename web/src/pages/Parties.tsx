@@ -53,7 +53,7 @@ export default function Parties() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">거래처·기획사</h1>
+      <h1 className="text-xl font-bold text-stone-900">거래처·기획사</h1>
 
       <Card title={editing ? '수정' : '신규 등록'}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -105,7 +105,7 @@ export default function Parties() {
       <Card>
         <Table head={['이름', '구분', '정산 기준', '공급률', '마감후 반품', '담당자']}>
           {parties.data?.map((p) => (
-            <tr key={p.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => edit(p)}>
+            <tr key={p.id} className="hover:bg-stone-50 cursor-pointer" onClick={() => edit(p)}>
               <td className="py-2 pr-4 font-medium">{p.name}</td>
               <td className="py-2 pr-4">{p.kind === 'LABEL' ? '기획사' : '거래처'}</td>
               <td className="py-2 pr-4">
@@ -113,7 +113,7 @@ export default function Parties() {
               </td>
               <td className="py-2 pr-4 tabular-nums">{p.defaultSupplyRate ?? '—'}</td>
               <td className="py-2 pr-4">{p.kind === 'RETAILER' ? (p.lateReturnMode === 'RESTATE' ? '소급 정정' : '차기 이월') : '—'}</td>
-              <td className="py-2 pr-4 text-gray-500">{p.contactName ?? '—'}</td>
+              <td className="py-2 pr-4 text-stone-500">{p.contactName ?? '—'}</td>
             </tr>
           ))}
         </Table>
@@ -144,12 +144,12 @@ function PortalAccount({ partyId, onError }: { partyId: number; onError: (m: str
   })
 
   return (
-    <div className="mt-4 pt-3 border-t border-gray-100">
+    <div className="mt-4 pt-3 border-t border-stone-100">
       <p className="text-sm font-medium mb-2">파트너 포털 계정</p>
       {info.data?.exists ? (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-stone-600">
           발급됨: <b>{info.data.username}</b>
-          <span className="text-xs text-gray-400 ml-2">이 계정으로 로그인하면 자기 재고·정산서만 조회합니다</span>
+          <span className="text-xs text-stone-400 ml-2">이 계정으로 로그인하면 자기 재고·정산서만 조회합니다</span>
         </p>
       ) : (
         <div className="flex gap-2 items-end flex-wrap">

@@ -38,7 +38,7 @@ export default function Payments() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">입금·지급</h1>
+      <h1 className="text-xl font-bold text-stone-900">입금·지급</h1>
 
       <Card title="기록">
         <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 items-end">
@@ -78,11 +78,11 @@ export default function Payments() {
               <td className="py-2 pr-4">{p.direction === 'IN' ? '입금' : '지급'}</td>
               <td className="py-2 pr-4">{p.counterpartyName}</td>
               <td className="py-2 pr-4 text-right"><Money value={p.amount} /></td>
-              <td className="py-2 pr-4 text-gray-500">{p.memo ?? '—'}</td>
+              <td className="py-2 pr-4 text-stone-500">{p.memo ?? '—'}</td>
               <td className="py-2 pr-4 text-right">
                 {!p.reversed && (
                   <button className="text-xs text-red-500 hover:underline"
-                          onClick={() => { if (confirm('이 건을 취소(역분개)할까요?')) reverse.mutate(p.id) }}>
+                          onClick={() => { if (confirm('이 기록을 취소할까요? 지우는 대신 반대 방향의 기록이 남습니다.')) reverse.mutate(p.id) }}>
                     취소
                   </button>
                 )}
@@ -90,7 +90,7 @@ export default function Payments() {
             </tr>
           ))}
           {payments.data?.length === 0 && (
-            <tr><td colSpan={6} className="py-8 text-center text-gray-400">기록이 없습니다</td></tr>
+            <tr><td colSpan={6} className="py-8 text-center text-stone-400">기록이 없습니다</td></tr>
           )}
         </Table>
       </Card>

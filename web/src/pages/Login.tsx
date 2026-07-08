@@ -25,19 +25,23 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-slate-900 px-4">
-      <form onSubmit={submit} className="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">cratebox</h1>
-          <p className="text-sm text-gray-500 mt-1">음반 재고·정산 시스템</p>
+    <div className="min-h-screen grid place-items-center bg-stone-950 grooves px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-6 text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            crate<span className="text-emerald-400">box</span>
+          </h1>
+          <p className="text-sm text-stone-400 mt-2">음반 재고·정산 장부</p>
         </div>
-        <Input placeholder="아이디" value={username} onChange={(e) => setUsername(e.target.value)} autoFocus />
-        <Input placeholder="비밀번호" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <Button type="submit" disabled={busy || !username || !password} className="w-full py-2">
-          {busy ? '확인 중…' : '로그인'}
-        </Button>
-      </form>
+        <form onSubmit={submit} className="bg-white rounded-md border border-stone-200 shadow-lg p-8 space-y-4">
+          <Input placeholder="아이디" value={username} onChange={(e) => setUsername(e.target.value)} autoFocus />
+          <Input placeholder="비밀번호" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <Button type="submit" disabled={busy || !username || !password} className="w-full py-2">
+            {busy ? '확인 중…' : '로그인'}
+          </Button>
+        </form>
+      </div>
     </div>
   )
 }

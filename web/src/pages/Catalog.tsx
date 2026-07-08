@@ -29,7 +29,7 @@ export default function Catalog() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">상품 관리</h1>
+      <h1 className="text-xl font-bold text-stone-900">상품 관리</h1>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <Card title="앨범 등록">
@@ -50,17 +50,17 @@ export default function Catalog() {
 
       <div className="grid md:grid-cols-2 gap-4">
         <Card title="앨범">
-          <ul className="divide-y divide-gray-100 text-sm">
+          <ul className="divide-y divide-stone-100 text-sm">
             {albums.data?.map((a) => (
               <li key={a.id}
-                  className={`py-2 px-2 rounded cursor-pointer ${selectedAlbum === a.id ? 'bg-indigo-50' : 'hover:bg-gray-50'}`}
+                  className={`py-2 px-2 rounded cursor-pointer ${selectedAlbum === a.id ? 'bg-emerald-50' : 'hover:bg-stone-50'}`}
                   onClick={() => setSelectedAlbum(a.id)}>
                 <span className="font-medium">{a.title}</span>
-                <span className="text-gray-500"> — {a.artistName}</span>
-                {a.releaseDate && <span className="text-xs text-gray-400 ml-2">{a.releaseDate}</span>}
+                <span className="text-stone-500"> — {a.artistName}</span>
+                {a.releaseDate && <span className="text-xs text-stone-400 ml-2">{a.releaseDate}</span>}
               </li>
             ))}
-            {albums.data?.length === 0 && <li className="py-6 text-center text-gray-400">앨범이 없습니다</li>}
+            {albums.data?.length === 0 && <li className="py-6 text-center text-stone-400">앨범이 없습니다</li>}
           </ul>
         </Card>
         {selectedAlbum != null && <VersionPanel albumId={selectedAlbum} onError={setError} />}
@@ -136,7 +136,7 @@ function AgreementRow({ albumId, onError }: { albumId: number; onError: (m: stri
   })
 
   return (
-    <div className="flex gap-2 items-end mb-3 pb-3 border-b border-gray-100 flex-wrap">
+    <div className="flex gap-2 items-end mb-3 pb-3 border-b border-stone-100 flex-wrap">
       <Field label="거래 계약">
         <Select value={kind} onChange={(e) => setKind(e.target.value)}>
           <option value="">미지정</option>
@@ -155,7 +155,7 @@ function AgreementRow({ albumId, onError }: { albumId: number; onError: (m: stri
               onClick={() => save.mutate()}>
         계약 저장
       </Button>
-      <span className="text-xs text-gray-400 pb-2">
+      <span className="text-xs text-stone-400 pb-2">
         {current
           ? current.kind === 'CONSIGNMENT'
             ? `현재: 위탁 · 수수료 ${Math.round((current.commissionRate ?? 0) * 10000) / 100}%`
@@ -187,15 +187,15 @@ function SkuPanel({ version, onError }: { version: AlbumVersion; onError: (m: st
   })
 
   return (
-    <div className="border border-gray-200 rounded p-3">
+    <div className="border border-stone-200 rounded p-3">
       <p className="text-sm font-medium mb-2">
         {version.name}
-        {version.releaseDate && <span className="text-xs text-gray-400 ml-2">발매 {version.releaseDate}</span>}
+        {version.releaseDate && <span className="text-xs text-stone-400 ml-2">발매 {version.releaseDate}</span>}
       </p>
       <ul className="text-sm space-y-1 mb-2">
         {skus.data?.map((s) => (
-          <li key={s.id} className="flex justify-between text-gray-600">
-            <span>{s.name} <span className="text-gray-400 text-xs">{s.barcode}</span></span>
+          <li key={s.id} className="flex justify-between text-stone-600">
+            <span>{s.name} <span className="text-stone-400 text-xs">{s.barcode}</span></span>
             <span className="tabular-nums">정가 {fmt(s.listPrice)}원</span>
           </li>
         ))}

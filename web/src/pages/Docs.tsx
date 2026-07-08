@@ -18,7 +18,7 @@ export default function Docs() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-xl font-bold text-gray-900">입출고 문서</h1>
+        <h1 className="text-xl font-bold text-stone-900">입출고 문서</h1>
         <Link to="/docs/new"><Button>+ 새 문서</Button></Link>
       </div>
       <div className="flex gap-2 flex-wrap">
@@ -35,23 +35,23 @@ export default function Docs() {
             <option value="">모든 상태</option>
             <option value="DRAFT">작성중</option>
             <option value="POSTED">확정</option>
-            <option value="REVERSED">역분개됨</option>
+            <option value="REVERSED">취소됨</option>
           </Select>
         </div>
       </div>
       <Card>
         <Table head={['문서번호', '유형', '상태', '상대방', '위치', '일자', '수량']}>
           {docs.data?.map((d) => (
-            <tr key={d.id} className="hover:bg-gray-50">
+            <tr key={d.id} className="hover:bg-stone-50">
               <td className="py-2 pr-4">
-                <Link to={`/docs/${d.id}`} className="text-indigo-600 hover:underline font-medium">
+                <Link to={`/docs/${d.id}`} className="text-emerald-700 hover:underline font-medium font-mono text-[13px]">
                   {d.docNo}
                 </Link>
               </td>
               <td className="py-2 pr-4">{DOC_TYPE_LABEL[d.docType as DocType] ?? d.docType}</td>
               <td className="py-2 pr-4"><Badge status={d.status} /></td>
               <td className="py-2 pr-4">{d.counterpartyName ?? '—'}</td>
-              <td className="py-2 pr-4 text-gray-500">
+              <td className="py-2 pr-4 text-stone-500">
                 {[d.locationFromName, d.locationToName].filter(Boolean).join(' → ') || '—'}
               </td>
               <td className="py-2 pr-4">{d.occurredOn}</td>
@@ -59,7 +59,7 @@ export default function Docs() {
             </tr>
           ))}
           {docs.data?.length === 0 && (
-            <tr><td colSpan={7} className="py-8 text-center text-gray-400">문서가 없습니다</td></tr>
+            <tr><td colSpan={7} className="py-8 text-center text-stone-400">문서가 없습니다</td></tr>
           )}
         </Table>
       </Card>

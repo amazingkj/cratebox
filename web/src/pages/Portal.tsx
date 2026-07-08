@@ -5,7 +5,8 @@ import {
   type Me, type PortalLedgerRow, type PortalStatement, type PortalStatementDetail,
   type PortalStockRow, type PortalSummary,
 } from '../api'
-import { Card, Money, Table } from '../ui'
+import { Button, Card, Money, Stamp, Table } from '../ui'
+import { downloadCsv } from '../csv'
 
 const ENTRY_LABEL: Record<string, string> = {
   SALE: '판매', SALE_RETURN: '반품', PURCHASE: '매입', PURCHASE_RETURN: '매입반품',
@@ -16,10 +17,12 @@ const ENTRY_LABEL: Record<string, string> = {
 /** 기획사 포털 전체 셸 (LABEL 역할 로그인 시) — 읽기전용 */
 export default function PortalApp({ me }: { me: Me }) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-        <span className="font-bold">cratebox <span className="text-indigo-300 font-normal">파트너 포털</span></span>
-        <span className="text-sm text-slate-300 flex items-center gap-3">
+    <div className="min-h-screen bg-stone-50">
+      <header className="bg-stone-950 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10 print:hidden">
+        <span className="font-bold tracking-tight">crate<span className="text-emerald-400">box</span>
+          <span className="ml-2 font-normal text-stone-400 text-sm">파트너 포털</span>
+        </span>
+        <span className="text-sm text-stone-400 flex items-center gap-3">
           {me.displayName}
           <button
             className="underline hover:text-white"
@@ -53,23 +56,23 @@ function PortalHome() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">{summary.data?.labelName}</h1>
+      <h1 className="text-xl font-bold text-stone-900">{summary.data?.labelName}</h1>
 
       <Card>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
           <div>
-            <p className="text-xs text-gray-400">정산 잔액</p>
+            <p className="text-xs text-stone-400">정산 잔액</p>
             <p className="font-bold text-base tabular-nums">
               <Money value={summary.data?.balance ?? 0} />원
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">음수 = 유통사가 지급할 금액</p>
+            <p className="text-xs text-stone-400 mt-0.5">음수 = 유통사가 지급할 금액</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">미마감분</p>
+            <p className="text-xs text-stone-400">미마감분</p>
             <p className="tabular-nums"><Money value={summary.data?.unstamped ?? 0} />원</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">유통사 보관 재고</p>
+            <p className="text-xs text-stone-400">유통사 보관 재고</p>
             <p className="tabular-nums">{fmt(totalStock)}개</p>
           </div>
         </div>
@@ -90,7 +93,7 @@ function PortalHome() {
             </tr>
           ))}
           {stock.data?.length === 0 && (
-            <tr><td colSpan={5} className="py-8 text-center text-gray-400">보관 중인 재고가 없습니다</td></tr>
+            <tr><td colSpan={5} className="py-8 text-center text-stone-400">보관 중인 재고가 없습니다</td></tr>
           )}
         </Table>
       </Card>
@@ -100,7 +103,7 @@ function PortalHome() {
           {statements.data?.map((s) => (
             <tr key={s.id} className={s.latest ? '' : 'opacity-50'}>
               <td className="py-2 pr-4">
-                <Link to={`/portal/statements/${s.id}`} className="text-indigo-600 hover:underline font-medium">
+                <Link to={`/portal/statements/${s.id}`} className="text-emerald-700 hover:underline font-medium">
                   {s.yearMonth}
                 </Link>
               </td>
@@ -112,7 +115,7 @@ function PortalHome() {
             </tr>
           ))}
           {statements.data?.length === 0 && (
-            <tr><td colSpan={6} className="py-8 text-center text-gray-400">발행된 정산서가 없습니다</td></tr>
+            <tr><td colSpan={6} className="py-8 text-center text-stone-400">발행된 정산서가 없습니다</td></tr>
           )}
         </Table>
       </Card>
@@ -120,20 +123,20 @@ function PortalHome() {
       <Card title="최근 거래 내역">
         <Table head={['일자', '구분', '품목', '수량', '금액', '정산월']}>
           {ledger.data?.slice(0, 50).map((r, i) => (
-            <tr key={i} className={r.reversal ? 'text-gray-400' : ''}>
+            <tr key={i} className={r.reversal ? 'text-stone-400' : ''}>
               <td className="py-2 pr-4">{r.occurredOn}</td>
               <td className="py-2 pr-4">
                 {ENTRY_LABEL[r.entryType] ?? r.entryType}
-                {r.reversal && <span className="text-xs ml-1">(역분개)</span>}
+                {r.reversal && <span className="text-xs ml-1">(취소분)</span>}
               </td>
               <td className="py-2 pr-4">{r.skuName ?? '—'}</td>
               <td className="py-2 pr-4 text-right tabular-nums">{r.qty != null ? fmt(r.qty) : '—'}</td>
               <td className="py-2 pr-4 text-right"><Money value={r.amount} /></td>
-              <td className="py-2 pr-4 text-gray-400">{r.yearMonth ?? '미마감'}</td>
+              <td className="py-2 pr-4 text-stone-400">{r.yearMonth ?? '미마감'}</td>
             </tr>
           ))}
           {ledger.data?.length === 0 && (
-            <tr><td colSpan={6} className="py-8 text-center text-gray-400">거래 내역이 없습니다</td></tr>
+            <tr><td colSpan={6} className="py-8 text-center text-stone-400">거래 내역이 없습니다</td></tr>
           )}
         </Table>
       </Card>
@@ -148,17 +151,41 @@ function PortalStatementPage() {
     queryFn: () => api.get<PortalStatementDetail>(`/api/portal/statements/${id}`),
   })
 
-  if (st.isLoading) return <p className="text-gray-400">불러오는 중…</p>
-  if (!st.data) return <p className="text-gray-400">정산서가 없습니다</p>
+  if (st.isLoading) return <p className="text-stone-400">불러오는 중…</p>
+  if (!st.data) return <p className="text-stone-400">정산서가 없습니다</p>
   const { header: h, lines } = st.data
+
+  function saveCsv() {
+    const rows: (string | number | null | undefined)[][] = lines.map((l) => [
+      ENTRY_LABEL[l.entryType] ?? l.entryType, l.label, l.qty, l.supplyAmount, l.vatAmount, l.amount,
+    ])
+    rows.push(
+      [],
+      ['이월 잔액', '', '', '', '', h.openingBalance],
+      ['입금/지급', '', '', '', '', h.paymentTotal],
+      ...(h.advanceTotal !== 0 ? [['MG 차감', '', '', '', '', h.advanceTotal] as (string | number)[]] : []),
+      ['기말 잔액', '', '', '', '', h.closingBalance],
+    )
+    downloadCsv(`정산서_${h.yearMonth}_v${h.version}.csv`,
+      ['구분', '품목', '수량', '공급가액', '부가세', '합계'], rows)
+  }
 
   return (
     <div className="space-y-4">
-      <Link to="/portal" className="text-sm text-indigo-600 hover:underline">← 돌아가기</Link>
-      <h1 className="text-xl font-bold text-gray-900">
-        {h.yearMonth} {h.kind === 'LABEL_CONSIGN' ? '위탁 정산서' : '매입 정산서'}
-        <span className="ml-2 text-sm font-normal text-gray-500">v{h.version}{!h.latest && ' (구버전)'}</span>
-      </h1>
+      <Link to="/portal" className="text-sm text-emerald-700 hover:underline print:hidden">← 돌아가기</Link>
+      <div className="flex items-start justify-between flex-wrap gap-2">
+        <h1 className="text-xl font-bold text-stone-900 flex items-center gap-3">
+          <span>
+            {h.yearMonth} {h.kind === 'LABEL_CONSIGN' ? '위탁 정산서' : '매입 정산서'}
+            <span className="ml-2 text-sm font-normal text-stone-500">v{h.version}{!h.latest && ' (구버전)'}</span>
+          </span>
+          {h.latest && <Stamp>정산 확정</Stamp>}
+        </h1>
+        <div className="flex gap-2 print:hidden">
+          <Button variant="ghost" onClick={saveCsv}>엑셀 저장</Button>
+          <Button variant="ghost" onClick={() => window.print()}>인쇄</Button>
+        </div>
+      </div>
 
       <Card>
         <div className={`grid grid-cols-2 gap-3 text-sm ${h.advanceTotal !== 0 ? 'sm:grid-cols-6' : 'sm:grid-cols-5'}`}>
@@ -169,7 +196,7 @@ function PortalStatementPage() {
           {h.advanceTotal !== 0 && <PSum label="MG 차감" value={h.advanceTotal} />}
           <PSum label="기말 잔액" value={h.closingBalance} strong />
         </div>
-        <p className="text-xs text-gray-400 mt-3">음수 = 유통사가 지급할 금액</p>
+        <p className="text-xs text-stone-400 mt-3">음수 = 유통사가 지급할 금액</p>
       </Card>
 
       <Card title="명세">
@@ -193,8 +220,8 @@ function PortalStatementPage() {
 function PSum({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
   return (
     <div>
-      <p className="text-xs text-gray-400">{label}</p>
-      <p className={`tabular-nums ${strong ? 'font-bold text-base' : ''} ${value < 0 ? 'text-red-600' : 'text-gray-800'}`}>
+      <p className="text-xs text-stone-400">{label}</p>
+      <p className={`tabular-nums ${strong ? 'font-bold text-base' : ''} ${value < 0 ? 'text-red-600' : 'text-stone-800'}`}>
         {value.toLocaleString('ko-KR')}원
       </p>
     </div>

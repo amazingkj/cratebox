@@ -29,8 +29,8 @@ export default function DocDetail() {
     onError: (e) => setError(e instanceof ApiError ? e.message : '처리 실패'),
   })
 
-  if (doc.isLoading) return <p className="text-gray-400">불러오는 중…</p>
-  if (!doc.data) return <p className="text-gray-400">문서가 없습니다</p>
+  if (doc.isLoading) return <p className="text-stone-400">불러오는 중…</p>
+  if (!doc.data) return <p className="text-stone-400">문서가 없습니다</p>
   const d = doc.data
   const skuName = (skuId: number) => {
     const s = skus.data?.find((x) => x.id === skuId)
@@ -47,7 +47,7 @@ export default function DocDetail() {
     <div className="space-y-4 max-w-3xl">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-gray-900">{d.docNo}</h1>
+          <h1 className="text-xl font-bold text-stone-900 font-mono tracking-tight">{d.docNo}</h1>
           <Badge status={d.status} />
         </div>
         <div className="flex gap-2">
@@ -59,8 +59,8 @@ export default function DocDetail() {
           )}
           {d.status === 'POSTED' && !d.reversalOfDocId && (
             <Button variant="danger" disabled={act.isPending}
-                    onClick={() => { if (confirm('역분개하면 원장에 반대 분개가 기록됩니다. 진행할까요?')) act.mutate('reverse') }}>
-              역분개
+                    onClick={() => { if (confirm('확정된 문서는 지우는 대신 반대 방향의 취소 문서가 만들어져 기록이 남습니다. 취소할까요?')) act.mutate('reverse') }}>
+              확정 취소
             </Button>
           )}
         </div>
@@ -69,27 +69,27 @@ export default function DocDetail() {
       {error && <p className="text-sm text-red-600">{error}</p>}
       {d.reversalOfDocId && (
         <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-          이 문서는 <Link className="underline" to={`/docs/${d.reversalOfDocId}`}>원본 문서</Link>의 역분개입니다
+          이 문서는 <Link className="underline" to={`/docs/${d.reversalOfDocId}`}>원본 문서</Link>를 취소하기 위해 만들어진 문서입니다
         </p>
       )}
       {d.reversedByDocId && (
-        <p className="text-sm text-gray-600 bg-gray-100 border border-gray-200 rounded px-3 py-2">
-          이 문서는 <Link className="underline" to={`/docs/${d.reversedByDocId}`}>역분개 문서</Link>로 취소되었습니다
+        <p className="text-sm text-stone-600 bg-stone-100 border border-stone-200 rounded px-3 py-2">
+          이 문서는 <Link className="underline" to={`/docs/${d.reversedByDocId}`}>취소 문서</Link>로 취소되었습니다
         </p>
       )}
 
       <Card>
         <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-          <div><dt className="text-gray-400 text-xs">유형</dt><dd>{DOC_TYPE_LABEL[d.docType]}</dd></div>
-          <div><dt className="text-gray-400 text-xs">일자</dt><dd>{d.occurredOn}</dd></div>
-          <div><dt className="text-gray-400 text-xs">확정 시각</dt><dd>{d.postedAt ? new Date(d.postedAt).toLocaleString('ko-KR') : '—'}</dd></div>
-          <div><dt className="text-gray-400 text-xs">메모</dt><dd>{d.memo ?? '—'}</dd></div>
+          <div><dt className="text-stone-400 text-xs">유형</dt><dd>{DOC_TYPE_LABEL[d.docType]}</dd></div>
+          <div><dt className="text-stone-400 text-xs">일자</dt><dd>{d.occurredOn}</dd></div>
+          <div><dt className="text-stone-400 text-xs">확정 시각</dt><dd>{d.postedAt ? new Date(d.postedAt).toLocaleString('ko-KR') : '—'}</dd></div>
+          <div><dt className="text-stone-400 text-xs">메모</dt><dd>{d.memo ?? '—'}</dd></div>
         </dl>
       </Card>
 
-      <Card title="라인">
+      <Card title="품목">
         <Table head={[
-          'SKU',
+          '품목',
           ...(hasOwner ? ['재고 구분'] : []),
           '수량',
           ...(priced ? ['단가', '공급가액'] : []),
@@ -100,8 +100,8 @@ export default function DocDetail() {
               {hasOwner && (
                 <td className="py-2 pr-4">
                   {l.ownerPartyId != null
-                    ? <span className="text-xs text-indigo-700 bg-indigo-50 rounded px-1.5 py-0.5">{ownerLabel(l)}</span>
-                    : <span className="text-xs text-gray-400">자사</span>}
+                    ? <span className="text-xs text-amber-800 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5">{ownerLabel(l)}</span>
+                    : <span className="text-xs text-stone-400">자사</span>}
                 </td>
               )}
               <td className="py-2 pr-4 text-right tabular-nums">{fmt(l.qty)}</td>
@@ -111,7 +111,7 @@ export default function DocDetail() {
           ))}
         </Table>
         {priced && (
-          <p className="text-right text-sm mt-2 text-gray-600">
+          <p className="text-right text-sm mt-2 text-stone-600">
             공급가액 합계 <b className="tabular-nums">{fmt(totalSupply)}</b> (+VAT {fmt(Math.trunc(Math.abs(totalSupply) / 10) * Math.sign(totalSupply))})
           </p>
         )}

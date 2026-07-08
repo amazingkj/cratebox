@@ -45,8 +45,8 @@ export default function Advances() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">MG 선급금</h1>
-      <p className="text-sm text-gray-500">
+      <h1 className="text-xl font-bold text-stone-900">MG 선급금</h1>
+      <p className="text-sm text-stone-500">
         기획사에 지급한 MG(미니멈 개런티)를 기록합니다. 마감 시 해당 앨범의 위탁 정산액에서 자동
         차감(회수)되며, 별도의 지급으로 기록하지 마세요.
       </p>
@@ -92,14 +92,14 @@ export default function Advances() {
               <td className="py-2 pr-4 font-medium">{a.labelName}</td>
               <td className="py-2 pr-4">{a.albumTitle}</td>
               <td className="py-2 pr-4 text-right tabular-nums">{fmt(a.amount)}</td>
-              <td className="py-2 pr-4 text-right tabular-nums text-gray-500">{fmt(a.recouped)}</td>
-              <td className={`py-2 pr-4 text-right tabular-nums font-medium ${a.remaining > 0 ? 'text-indigo-700' : 'text-gray-400'}`}>
+              <td className="py-2 pr-4 text-right tabular-nums text-stone-500">{fmt(a.recouped)}</td>
+              <td className={`py-2 pr-4 text-right tabular-nums font-medium ${a.remaining > 0 ? 'text-emerald-800' : 'text-stone-400'}`}>
                 {fmt(a.remaining)}
               </td>
-              <td className="py-2 pr-4 text-gray-500">{a.memo ?? ''}</td>
+              <td className="py-2 pr-4 text-stone-500">{a.memo ?? ''}</td>
               <td className="py-2 pr-4 text-right">
                 {a.recouped === 0 && (
-                  <button className="text-gray-400 hover:text-red-500 text-sm"
+                  <button className="text-stone-400 hover:text-red-500 text-sm"
                           onClick={() => { if (confirm('선급금 기록을 삭제할까요?')) remove.mutate(a.id) }}>
                     삭제
                   </button>
@@ -108,7 +108,7 @@ export default function Advances() {
             </tr>
           ))}
           {advances.data?.length === 0 && (
-            <tr><td colSpan={8} className="py-8 text-center text-gray-400">등록된 선급금이 없습니다</td></tr>
+            <tr><td colSpan={8} className="py-8 text-center text-stone-400">등록된 선급금이 없습니다</td></tr>
           )}
         </Table>
       </Card>
