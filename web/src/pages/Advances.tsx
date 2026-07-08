@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, ApiError, fmt, type Advance, type Album, type Party } from '../api'
+import { api, ApiError, fmt, todayLocal, type Advance, type Album, type Party } from '../api'
 import { Button, Card, Field, Input, Select, Table } from '../ui'
 
 export default function Advances() {
@@ -8,7 +8,7 @@ export default function Advances() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     labelPartyId: '', albumId: '', amount: '',
-    paidOn: new Date().toISOString().slice(0, 10), memo: '',
+    paidOn: todayLocal(), memo: '',
   })
 
   const advances = useQuery({ queryKey: ['advances'], queryFn: () => api.get<Advance[]>('/api/advances') })

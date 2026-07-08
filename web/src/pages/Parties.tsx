@@ -131,6 +131,8 @@ function PortalAccount({ partyId, onError }: { partyId: number; onError: (m: str
   })
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [resetPw, setResetPw] = useState('')
+  const [resetDone, setResetDone] = useState(false)
 
   const create = useMutation({
     mutationFn: () => api.post(`/api/parties/${partyId}/portal-user`, { username, password }),
@@ -143,14 +145,37 @@ function PortalAccount({ partyId, onError }: { partyId: number; onError: (m: str
     onError: (e) => onError(e instanceof ApiError ? e.message : '발급 실패'),
   })
 
+  const reset = useMutation({
+    mutationFn: () => api.put(`/api/parties/${partyId}/portal-user/password`, { password: resetPw }),
+    onSuccess: () => {
+      setResetPw('')
+      setResetDone(true)
+      onError('')
+    },
+    onError: (e) => onError(e instanceof ApiError ? e.message : '재설정 실패'),
+  })
+
   return (
     <div className="mt-4 pt-3 border-t border-stone-100">
       <p className="text-sm font-medium mb-2">파트너 포털 계정</p>
       {info.data?.exists ? (
-        <p className="text-sm text-stone-600">
-          발급됨: <b>{info.data.username}</b>
-          <span className="text-xs text-stone-400 ml-2">이 계정으로 로그인하면 자기 재고·정산서만 조회합니다</span>
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-stone-600">
+            발급됨: <b>{info.data.username}</b>
+            <span className="text-xs text-stone-400 ml-2">이 계정으로 로그인하면 자기 재고·정산서만 조회합니다</span>
+          </p>
+          <div className="flex gap-2 items-end flex-wrap">
+            <Field label="새 비밀번호 (8자 이상, 재설정 후 파트너에게 전달)">
+              <Input type="password" value={resetPw}
+                     onChange={(e) => { setResetPw(e.target.value); setResetDone(false) }} />
+            </Field>
+            <Button variant="ghost" disabled={resetPw.length < 8 || reset.isPending}
+                    onClick={() => { if (confirm('포털 계정 비밀번호를 재설정할까요? 파트너의 기존 비밀번호는 즉시 사용할 수 없게 됩니다.')) reset.mutate() }}>
+              비밀번호 재설정
+            </Button>
+            {resetDone && <span className="text-sm text-emerald-700 pb-2">재설정되었습니다</span>}
+          </div>
+        </div>
       ) : (
         <div className="flex gap-2 items-end flex-wrap">
           <Field label="아이디">

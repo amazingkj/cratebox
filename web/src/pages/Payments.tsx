@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, ApiError, type Party, type Payment } from '../api'
+import { api, ApiError, todayLocal, type Party, type Payment } from '../api'
 import { Button, Card, Field, Input, Money, Select, Table } from '../ui'
 
 export default function Payments() {
@@ -8,7 +8,7 @@ export default function Payments() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     counterpartyId: '', direction: 'IN', amount: '',
-    occurredOn: new Date().toISOString().slice(0, 10), memo: '',
+    occurredOn: todayLocal(), memo: '',
   })
 
   const parties = useQuery({ queryKey: ['parties'], queryFn: () => api.get<Party[]>('/api/parties') })

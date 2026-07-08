@@ -115,7 +115,8 @@ public class StockDocService {
         switch (t) {
             case PURCHASE_IN, CUSTOMER_RETURN, ADJUST, OPENING, CONSIGN_IN ->
                     requireWarehouse(doc, doc.locationToId(), "입고 창고");
-            case PURCHASE_RETURN, SALE_OUT, RETURN_TO_OWNER -> requireWarehouse(doc, doc.locationFromId(), "출고 창고");
+            case PURCHASE_RETURN, SALE_OUT, RETURN_TO_OWNER, DIRECT_SALE ->
+                    requireWarehouse(doc, doc.locationFromId(), "출고 창고");
             case CONSIGN_PLACE -> {
                 requireWarehouse(doc, doc.locationFromId(), "출고 창고");
                 requireRetailerLocation(doc, doc.locationToId(), cp);
@@ -203,7 +204,8 @@ public class StockDocService {
     }
 
     private void validateRestate(StockDoc doc, DocType t) {
-        if (!t.priced()) {
+        // 현장판매는 자사 라인이면 정산 엔트리가 없어 소급이 무의미하고, 정정은 역분개로 처리한다
+        if (!t.priced() || t == DocType.DIRECT_SALE) {
             throw new DomainException("정산이 발생하지 않는 문서는 소급 정정할 수 없습니다");
         }
         var period = jdbc.sql("""
@@ -224,7 +226,7 @@ public class StockDocService {
 
     private boolean requiresCounterparty(DocType t) {
         return switch (t) {
-            case TRANSFER, ADJUST, OPENING -> false;
+            case TRANSFER, ADJUST, OPENING, DIRECT_SALE -> false;
             default -> true;
         };
     }
@@ -279,9 +281,11 @@ public class StockDocService {
         applyBalances(orgId, deltas);
         dao.markPosted(docId);
         if (doc.restatePeriodId() != null) {
-            // 위탁 라인은 기획사 정산서도 함께 재발행
+            // 위탁 라인은 기획사 정산서도 함께 재발행 (상대방 없는 문서는 라인 소유자만)
             Set<Long> cps = new LinkedHashSet<>();
-            cps.add(doc.counterpartyId());
+            if (doc.counterpartyId() != null) {
+                cps.add(doc.counterpartyId());
+            }
             doc.lines().stream().map(StockDocLine::ownerPartyId).filter(Objects::nonNull).forEach(cps::add);
             for (Long cpId : cps) {
                 closing.regenerateStatement(orgId, userId, doc.restatePeriodId(), cpId);
@@ -336,6 +340,11 @@ public class StockDocService {
             case CONSIGN_IN -> inv(doc, line, "CONSIGN_IN", doc.locationToId(), qty, doc.counterpartyId(), deltas);
             case RETURN_TO_OWNER ->
                     inv(doc, line, "RETURN_TO_OWNER", doc.locationFromId(), -qty, doc.counterpartyId(), deltas);
+            case DIRECT_SALE -> {
+                // 현장 수금이므로 거래처 채권(settle) 없음. 위탁 라인만 기획사몫 발생
+                inv(doc, line, "DIRECT_SALE", doc.locationFromId(), -qty, owner, deltas);
+                settleOwner(doc, line, "CONSIGN_SALE", -1, skuAlbums);
+            }
         }
     }
 

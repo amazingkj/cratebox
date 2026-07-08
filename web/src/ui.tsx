@@ -1,4 +1,4 @@
-import type { ReactNode, InputHTMLAttributes, SelectHTMLAttributes, ButtonHTMLAttributes } from 'react'
+import type { ReactNode, ComponentProps, ButtonHTMLAttributes } from 'react'
 
 export function Card({ title, actions, children }: { title?: string; actions?: ReactNode; children: ReactNode }) {
   return (
@@ -31,7 +31,7 @@ export function Table({ head, children }: { head: string[]; children: ReactNode 
   )
 }
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
+export function Input(props: ComponentProps<'input'>) {
   return (
     <input
       {...props}
@@ -40,7 +40,7 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   )
 }
 
-export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
+export function Select(props: ComponentProps<'select'>) {
   return (
     <select
       {...props}
@@ -97,6 +97,21 @@ export function Stamp({ children }: { children: ReactNode }) {
     <span className="inline-block -rotate-2 text-xs font-semibold tracking-widest px-1.5 py-0.5 rounded-sm border-2 border-emerald-700/70 text-emerald-800 bg-emerald-50/40">
       {children}
     </span>
+  )
+}
+
+/** 정산서 머리글의 발행사 표기 (운영·포털 공용) */
+export function IssuerLine({ issuer }: {
+  issuer?: { name?: string; bizRegNo?: string | null; phone?: string | null; address?: string | null } | null
+}) {
+  if (!issuer?.name) return null
+  return (
+    <p className="text-xs text-stone-400 mt-1">
+      발행사: {issuer.name}
+      {issuer.bizRegNo && ` · 사업자 ${issuer.bizRegNo}`}
+      {issuer.phone && ` · ${issuer.phone}`}
+      {issuer.address && ` · ${issuer.address}`}
+    </p>
   )
 }
 

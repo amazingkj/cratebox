@@ -1,4 +1,5 @@
 .idea/
 node_modules/
 server/src/main/resources/static/
+server/src/main/resources/tls/
 *.log

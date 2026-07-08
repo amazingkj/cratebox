@@ -2,6 +2,8 @@ package io.cratebox.settlement;
 
 import io.cratebox.auth.AppPrincipal;
 import io.cratebox.common.NotFoundException;
+import io.cratebox.settings.OrgProfile;
+import io.cratebox.settings.OrgProfiles;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,7 +30,7 @@ public class SettlementController {
     public record StatementLineView(Long skuId, String label, String entryType, Integer qty,
                                     Long unitPrice, long supplyAmount, long vatAmount, long amount) {}
 
-    public record StatementDetail(StatementSummary header, List<StatementLineView> lines) {}
+    public record StatementDetail(StatementSummary header, OrgProfile issuer, List<StatementLineView> lines) {}
 
     public record PaymentRequest(@NotNull Long counterpartyId,
                                  @NotBlank @jakarta.validation.constraints.Pattern(regexp = "IN|OUT") String direction,
@@ -41,11 +43,14 @@ public class SettlementController {
     private final ClosingService closingService;
     private final PaymentService paymentService;
     private final JdbcClient jdbc;
+    private final OrgProfiles orgProfiles;
 
-    public SettlementController(ClosingService closingService, PaymentService paymentService, JdbcClient jdbc) {
+    public SettlementController(ClosingService closingService, PaymentService paymentService, JdbcClient jdbc,
+                                OrgProfiles orgProfiles) {
         this.closingService = closingService;
         this.paymentService = paymentService;
         this.jdbc = jdbc;
+        this.orgProfiles = orgProfiles;
     }
 
     // ── 기간/마감 ─────────────────────────────────────
@@ -125,7 +130,7 @@ public class SettlementController {
                         (Long) rs.getObject("unit_price"), rs.getLong("supply_amount"),
                         rs.getLong("vat_amount"), rs.getLong("amount")))
                 .list();
-        return new StatementDetail(header, lines);
+        return new StatementDetail(header, orgProfiles.get(p.orgId()), lines);
     }
 
     @PostMapping("/statements/regenerate")

@@ -16,6 +16,8 @@ public class PortalUserController {
 
     public record CreateRequest(@NotBlank String username, @NotBlank @Size(min = 8) String password) {}
 
+    public record ResetPasswordRequest(@NotBlank @Size(min = 8) String password) {}
+
     public record PortalUserView(boolean exists, String username) {}
 
     private final JdbcClient jdbc;
@@ -59,5 +61,21 @@ public class PortalUserController {
                 .param("party", partyId)
                 .update();
         return new PortalUserView(true, req.username());
+    }
+
+    /** 포털 계정 비밀번호 재설정 (운영자가 새 비밀번호를 지정해 전달) */
+    @PutMapping("/password")
+    public void resetPassword(@AuthenticationPrincipal AppPrincipal p, @PathVariable Long partyId,
+                              @Valid @RequestBody ResetPasswordRequest req) {
+        int updated = jdbc.sql("""
+                update app_user set password_hash = :hash
+                where org_id = :org and party_id = :party
+                """)
+                .param("hash", encoder.encode(req.password()))
+                .param("org", p.orgId()).param("party", partyId)
+                .update();
+        if (updated == 0) {
+            throw new DomainException("포털 계정이 없습니다 — 먼저 발급하세요");
+        }
     }
 }

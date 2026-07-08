@@ -3,6 +3,8 @@ package io.cratebox.portal;
 import io.cratebox.auth.AppPrincipal;
 import io.cratebox.common.JdbcUtils;
 import io.cratebox.common.NotFoundException;
+import io.cratebox.settings.OrgProfile;
+import io.cratebox.settings.OrgProfiles;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -35,15 +37,18 @@ public class PortalController {
     public record PortalStatementLine(String label, String entryType, Integer qty, Long unitPrice,
                                       long supplyAmount, long vatAmount, long amount) {}
 
-    public record PortalStatementDetail(PortalStatement header, List<PortalStatementLine> lines) {}
+    public record PortalStatementDetail(PortalStatement header, OrgProfile issuer,
+                                        List<PortalStatementLine> lines) {}
 
     public record PortalLedgerRow(LocalDate occurredOn, String entryType, String skuName,
                                   Integer qty, long amount, String yearMonth, boolean reversal) {}
 
     private final JdbcClient jdbc;
+    private final OrgProfiles orgProfiles;
 
-    public PortalController(JdbcClient jdbc) {
+    public PortalController(JdbcClient jdbc, OrgProfiles orgProfiles) {
         this.jdbc = jdbc;
+        this.orgProfiles = orgProfiles;
     }
 
     @GetMapping("/summary")
@@ -129,7 +134,7 @@ public class PortalController {
                         (Integer) rs.getObject("qty"), (Long) rs.getObject("unit_price"),
                         rs.getLong("supply_amount"), rs.getLong("vat_amount"), rs.getLong("amount")))
                 .list();
-        return new PortalStatementDetail(header, lines);
+        return new PortalStatementDetail(header, orgProfiles.get(p.orgId()), lines);
     }
 
     /** 자기 앞 정산 원장 (판매·반품·지급·MG 회수 내역) */

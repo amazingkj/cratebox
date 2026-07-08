@@ -15,11 +15,14 @@ import Settlement from './pages/Settlement'
 import StatementPage from './pages/StatementDetail'
 import Reports from './pages/Reports'
 import PortalApp from './pages/Portal'
+import FieldSale from './pages/FieldSale'
+import Settings from './pages/Settings'
 
 const MENU: { section: string; items: { to: string; label: string }[] }[] = [
   { section: '운영', items: [
     { to: '/stock', label: '재고 현황' },
     { to: '/docs', label: '입출고 문서' },
+    { to: '/pos', label: '현장판매' },
   ]},
   { section: '정산', items: [
     { to: '/settlement', label: '정산·마감' },
@@ -30,6 +33,7 @@ const MENU: { section: string; items: { to: string; label: string }[] }[] = [
   { section: '기준정보', items: [
     { to: '/catalog', label: '상품 관리' },
     { to: '/parties', label: '거래처·기획사' },
+    { to: '/settings', label: '설정' },
   ]},
 ]
 
@@ -123,6 +127,8 @@ function Shell() {
           <Route path="/docs" element={<Docs />} />
           <Route path="/docs/new" element={<DocNew />} />
           <Route path="/docs/:id" element={<DocDetail />} />
+          <Route path="/pos" element={<FieldSale />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/settlement" element={<Settlement />} />
           <Route path="/settlement/statements/:id" element={<StatementPage />} />
           <Route path="/payments" element={<Payments />} />
