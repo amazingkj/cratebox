@@ -35,9 +35,10 @@ public class StockDocController {
     public List<StockDocDao.DocSummary> list(@AuthenticationPrincipal AppPrincipal p,
                                              @RequestParam(required = false) String docType,
                                              @RequestParam(required = false) String status,
+                                             @RequestParam(required = false) Long counterpartyId,
                                              @RequestParam(required = false) LocalDate from,
                                              @RequestParam(required = false) LocalDate to) {
-        return dao.list(p.orgId(), docType, status, from, to);
+        return dao.list(p.orgId(), docType, status, counterpartyId, from, to);
     }
 
     @GetMapping("/{id}")

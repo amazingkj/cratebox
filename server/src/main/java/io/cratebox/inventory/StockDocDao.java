@@ -114,7 +114,8 @@ public class StockDocDao {
                 d.createdBy(), d.createdAt(), d.postedAt(), d.reversalOfDocId(), d.reversedByDocId(), lines);
     }
 
-    public List<DocSummary> list(Long orgId, String docType, String status, LocalDate from, LocalDate to) {
+    public List<DocSummary> list(Long orgId, String docType, String status, Long counterpartyId,
+                                 LocalDate from, LocalDate to) {
         return jdbc.sql("""
                 select d.id, d.doc_no, d.doc_type, d.status, d.counterparty_id, p.name as cp_name,
                        lf.name as loc_from_name, lt.name as loc_to_name, d.occurred_on, d.memo,
@@ -131,13 +132,14 @@ public class StockDocDao {
                 where d.org_id = :org
                   and (:type::text is null or d.doc_type = :type)
                   and (:status::text is null or d.status = :status)
+                  and (:cp::bigint is null or d.counterparty_id = :cp)
                   and (:from::date is null or d.occurred_on >= :from)
                   and (:to::date is null or d.occurred_on <= :to)
                 order by d.id desc
                 limit 500
                 """)
                 .param("org", orgId).param("type", docType).param("status", status)
-                .param("from", from).param("to", to)
+                .param("cp", counterpartyId).param("from", from).param("to", to)
                 .query((rs, i) -> new DocSummary(rs.getLong("id"), rs.getString("doc_no"),
                         rs.getString("doc_type"), rs.getString("status"),
                         (Long) rs.getObject("counterparty_id"), rs.getString("cp_name"),

@@ -1,9 +1,13 @@
 package io.cratebox.auth;
 
+import io.cratebox.common.DomainException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.Map;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,12 +33,20 @@ public class AuthController {
 
     public record MeResponse(Long userId, String username, String displayName, String role) {}
 
+    public record PasswordChangeRequest(@NotBlank String currentPassword,
+                                        @NotBlank @Size(min = 8) String newPassword) {}
+
     private final AuthenticationManager authManager;
     private final SecurityContextRepository contextRepository;
+    private final JdbcClient jdbc;
+    private final PasswordEncoder encoder;
 
-    public AuthController(AuthenticationManager authManager, SecurityContextRepository contextRepository) {
+    public AuthController(AuthenticationManager authManager, SecurityContextRepository contextRepository,
+                          JdbcClient jdbc, PasswordEncoder encoder) {
         this.authManager = authManager;
         this.contextRepository = contextRepository;
+        this.jdbc = jdbc;
+        this.encoder = encoder;
     }
 
     @PostMapping("/login")
@@ -67,5 +79,19 @@ public class AuthController {
     @GetMapping("/me")
     public MeResponse me(@AuthenticationPrincipal AppPrincipal p) {
         return new MeResponse(p.userId(), p.username(), p.displayName(), p.role());
+    }
+
+    /** 본인 비밀번호 변경 (ADMIN·LABEL 공용, 현재 비밀번호 확인 후) */
+    @PostMapping("/password")
+    public void changePassword(@AuthenticationPrincipal AppPrincipal p,
+                               @Validated @RequestBody PasswordChangeRequest req) {
+        String hash = jdbc.sql("select password_hash from app_user where id = :id")
+                .param("id", p.userId()).query(String.class).single();
+        if (!encoder.matches(req.currentPassword(), hash)) {
+            throw new DomainException("현재 비밀번호가 올바르지 않습니다");
+        }
+        jdbc.sql("update app_user set password_hash = :hash where id = :id")
+                .param("hash", encoder.encode(req.newPassword())).param("id", p.userId())
+                .update();
     }
 }

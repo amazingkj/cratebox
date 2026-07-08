@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api, fmt, type StatementDetail } from '../api'
-import { Button, Card, Money, Stamp, Table } from '../ui'
+import { Button, Card, IssuerLine, Money, Stamp, Table } from '../ui'
 import { downloadCsv } from '../csv'
 
 const ENTRY_LABEL: Record<string, string> = {
@@ -23,7 +23,7 @@ export default function StatementPage() {
 
   if (st.isLoading) return <p className="text-stone-400">불러오는 중…</p>
   if (!st.data) return <p className="text-stone-400">정산서가 없습니다</p>
-  const { header: h, lines } = st.data
+  const { header: h, issuer, lines } = st.data
 
   function saveCsv() {
     const rows: (string | number | null | undefined)[][] = lines.map((l) => [
@@ -57,6 +57,7 @@ export default function StatementPage() {
             {KIND_LABEL[h.kind] ?? h.kind} ·
             발행 {new Date(h.generatedAt).toLocaleString('ko-KR')}
           </p>
+          <IssuerLine issuer={issuer} />
         </div>
         <div className="flex gap-2 print:hidden">
           <Button variant="ghost" onClick={saveCsv}>엑셀 저장</Button>

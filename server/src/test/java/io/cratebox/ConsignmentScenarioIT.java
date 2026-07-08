@@ -532,4 +532,88 @@ class ConsignmentScenarioIT {
         }
         return new HttpEntity<>(body, h);
     }
+
+    // ── 현장판매 + 발행사 정보 + 비밀번호 관리 ────────
+
+    @Test
+    @Order(9)
+    void directSaleOrgProfileAndPasswords() {
+        // 발행사 정보 등록 → 정산서 상세(운영·포털)에 issuer로 실린다
+        put("/api/org", """
+                {"name":"테스트유통2","bizRegNo":"123-45-67890","ceoName":"김유통",
+                 "address":"서울시 마포구 창고로 1","phone":"02-1234-5678","email":"biz@test2.io"}""");
+        assertThat(get("/api/org").get("bizRegNo").asText()).isEqualTo("123-45-67890");
+
+        long stId = latestStatement(label, "2026-06").get("id").asLong();
+        JsonNode issuer = get("/api/settlement/statements/" + stId).get("issuer");
+        assertThat(issuer.get("name").asText()).isEqualTo("테스트유통2");
+        assertThat(issuer.get("bizRegNo").asText()).isEqualTo("123-45-67890");
+
+        // 현장판매: 자사 2 + 위탁 3 @10,000 — 상대방 없음, 자사 라인은 정산 없음
+        long doc = postDoc("""
+                {"docType":"DIRECT_SALE","locationFromId":%d,"occurredOn":"2026-07-05",
+                 "lines":[{"skuId":%d,"qty":2,"unitPrice":10000},
+                          {"skuId":%d,"qty":3,"unitPrice":10000,"ownerPartyId":%d}]}"""
+                .formatted(warehouse, sku, sku, label));
+        assertThat(poolQty(warehouse, null)).isEqualTo(18);
+        assertThat(poolQty(warehouse, label)).isEqualTo(12);
+        // 위탁 라인만 기획사몫: 3×10,000×0.85 = 25,500 (+VAT 2,550) 채무
+        assertThat(docSettlement(doc, label)).containsExactly(-25_500, -2_550, -28_050);
+        assertThat(docSettlement(doc, kyobo)).containsExactly(0, 0, 0);
+        assertThat(balance(label)).isEqualTo(-127_050);
+
+        // 위탁 계약 없는 앨범은 현장판매에서도 위탁 라인 불가
+        expectCreateError("""
+                {"docType":"DIRECT_SALE","locationFromId":%d,"occurredOn":"2026-07-05",
+                 "lines":[{"skuId":%d,"qty":1,"unitPrice":10000,"ownerPartyId":%d}]}"""
+                .formatted(warehouse, sku2, label), "위탁 계약이 등록되지 않은 앨범");
+
+        // 현장판매는 소급 정정 불가 (자사 라인이면 정산 엔트리가 없어 무의미)
+        long closedPeriod = 0;
+        for (JsonNode p : get("/api/settlement/periods")) {
+            if (p.get("status").asText().equals("CLOSED")) {
+                closedPeriod = p.get("id").asLong();
+                break;
+            }
+        }
+        expectCreateError("""
+                {"docType":"DIRECT_SALE","locationFromId":%d,"occurredOn":"2026-07-05","restatePeriodId":%d,
+                 "lines":[{"skuId":%d,"qty":1,"unitPrice":10000}]}"""
+                .formatted(warehouse, closedPeriod, sku), "소급 정정할 수 없습니다");
+
+        // 역분개로 재고·잔액 원복
+        post("/api/docs/" + doc + "/reverse", null);
+        assertThat(poolQty(warehouse, null)).isEqualTo(20);
+        assertThat(poolQty(warehouse, label)).isEqualTo(15);
+        assertThat(balance(label)).isEqualTo(-99_000);
+
+        // 본인 비밀번호 변경: 현재 비밀번호 불일치 거부 → 변경 → 새 비밀번호로 로그인
+        ResponseEntity<String> wrong = postRaw("/api/auth/password", """
+                {"currentPassword":"nope-wrong","newPassword":"newpass123!"}""");
+        assertThat(wrong.getStatusCode().value()).isEqualTo(400);
+        post("/api/auth/password", """
+                {"currentPassword":"testpass1!","newPassword":"newpass123!"}""");
+        ResponseEntity<String> relogin = rest.postForEntity("/api/auth/login",
+                entityWith(null, """
+                        {"username":"consign_admin","password":"newpass123!"}"""), String.class);
+        assertThat(relogin.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // 포털 계정 비밀번호 재설정(운영자 지정) → 이전 비밀번호 401, 새 비밀번호 200
+        put("/api/parties/" + label + "/portal-user/password", """
+                {"password":"resetpass1!"}""");
+        assertThat(rest.postForEntity("/api/auth/login", entityWith(null, """
+                {"username":"moonlight_portal","password":"portal123!"}"""), String.class)
+                .getStatusCode().value()).isEqualTo(401);
+        ResponseEntity<String> newPw = rest.postForEntity("/api/auth/login", entityWith(null, """
+                {"username":"moonlight_portal","password":"resetpass1!"}"""), String.class);
+        assertThat(newPw.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // 포털 정산서 상세에도 발행사가 실린다
+        String portalCookie = newPw.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
+        JsonNode portalSts = read(rest.exchange("/api/portal/statements", HttpMethod.GET,
+                entityWith(portalCookie, null), String.class).getBody());
+        JsonNode pDetail = read(rest.exchange("/api/portal/statements/" + portalSts.get(0).get("id").asLong(),
+                HttpMethod.GET, entityWith(portalCookie, null), String.class).getBody());
+        assertThat(pDetail.get("issuer").get("name").asText()).isEqualTo("테스트유통2");
+    }
 }

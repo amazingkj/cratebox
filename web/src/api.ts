@@ -38,6 +38,12 @@ export const api = {
 
 export interface Me { userId: number; username: string; displayName: string; role: 'ADMIN' | 'LABEL' }
 
+/** 발행사(운영사) 정보 — 정산서 머리글에 표기 */
+export interface Org {
+  name: string; bizRegNo?: string | null; ceoName?: string | null
+  address?: string | null; phone?: string | null; email?: string | null
+}
+
 export interface Party {
   id: number; kind: 'LABEL' | 'RETAILER'; name: string
   bizRegNo?: string; contactName?: string; phone?: string; email?: string; memo?: string
@@ -71,13 +77,13 @@ export interface Location {
 export type DocType =
   | 'PURCHASE_IN' | 'PURCHASE_RETURN' | 'SALE_OUT' | 'CONSIGN_PLACE' | 'SALES_REPORT'
   | 'CUSTOMER_RETURN' | 'CONSIGN_RECALL' | 'TRANSFER' | 'ADJUST' | 'OPENING'
-  | 'CONSIGN_IN' | 'RETURN_TO_OWNER'
+  | 'CONSIGN_IN' | 'RETURN_TO_OWNER' | 'DIRECT_SALE'
 
 export const DOC_TYPE_LABEL: Record<DocType, string> = {
   PURCHASE_IN: '사입입고', PURCHASE_RETURN: '매입반품', SALE_OUT: '판매출고',
   CONSIGN_PLACE: '진열출고', SALES_REPORT: '판매보고', CUSTOMER_RETURN: '거래처반품',
   CONSIGN_RECALL: '회수', TRANSFER: '창고이동', ADJUST: '실사조정', OPENING: '기초재고',
-  CONSIGN_IN: '수탁입고', RETURN_TO_OWNER: '위탁반납',
+  CONSIGN_IN: '수탁입고', RETURN_TO_OWNER: '위탁반납', DIRECT_SALE: '현장판매',
 }
 
 export interface DocLine {
@@ -121,7 +127,7 @@ export interface StatementLine {
   skuId?: number; label: string; entryType: string; qty?: number; unitPrice?: number
   supplyAmount: number; vatAmount: number; amount: number
 }
-export interface StatementDetail { header: StatementSummary; lines: StatementLine[] }
+export interface StatementDetail { header: StatementSummary; issuer: Org; lines: StatementLine[] }
 
 export interface Payment {
   id: number; counterpartyId: number; counterpartyName: string; direction: 'IN' | 'OUT'
@@ -140,10 +146,17 @@ export interface PortalStatement {
   openingBalance: number; chargeSupply: number; chargeVat: number; chargeTotal: number
   paymentTotal: number; advanceTotal: number; closingBalance: number; generatedAt: string; latest: boolean
 }
-export interface PortalStatementDetail { header: PortalStatement; lines: StatementLine[] }
+export interface PortalStatementDetail { header: PortalStatement; issuer: Org; lines: StatementLine[] }
 export interface PortalLedgerRow {
   occurredOn: string; entryType: string; skuName?: string; qty?: number
   amount: number; yearMonth?: string; reversal: boolean
 }
 
 export const fmt = (n: number | undefined | null) => (n ?? 0).toLocaleString('ko-KR')
+
+/** 로컬 기준 오늘 날짜 (toISOString은 UTC라 한국에선 오전 9시 전에 전날이 나온다) */
+export const todayLocal = () => {
+  const d = new Date()
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+  return d.toISOString().slice(0, 10)
+}

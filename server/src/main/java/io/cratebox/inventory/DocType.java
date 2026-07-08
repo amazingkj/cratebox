@@ -13,7 +13,8 @@ public enum DocType {
     ADJUST("AJ"),           // 실사조정 (signed 수량)
     OPENING("OP"),          // 기초재고
     CONSIGN_IN("CI"),       // 수탁입고 (기획사 소유 재고 입고, 정산 없음) — Phase ②
-    RETURN_TO_OWNER("RO");  // 위탁 반납 (기획사 소유 재고 반환, 정산 없음) — Phase ②
+    RETURN_TO_OWNER("RO"),  // 위탁 반납 (기획사 소유 재고 반환, 정산 없음) — Phase ②
+    DIRECT_SALE("DS");      // 현장판매 (행사·팝업 직판, 상대방 없음·현장 수금. 위탁 라인은 기획사몫 전기)
 
     public final String prefix;
 
@@ -21,10 +22,10 @@ public enum DocType {
         this.prefix = prefix;
     }
 
-    /** 정산 원장 엔트리를 생성하는 타입 (단가 필수) */
+    /** 단가가 필수인 타입 (정산 엔트리 생성. 현장판매는 위탁 라인만 정산) */
     public boolean priced() {
         return switch (this) {
-            case PURCHASE_IN, PURCHASE_RETURN, SALE_OUT, CUSTOMER_RETURN, SALES_REPORT -> true;
+            case PURCHASE_IN, PURCHASE_RETURN, SALE_OUT, CUSTOMER_RETURN, SALES_REPORT, DIRECT_SALE -> true;
             default -> false;
         };
     }

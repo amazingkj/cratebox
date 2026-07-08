@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, ApiError, type Period, type StatementSummary } from '../api'
+import { api, ApiError, type Party, type Period, type StatementSummary } from '../api'
 import { Button, Card, Input, Money, Select, Table } from '../ui'
 
 export default function Settlement() {
@@ -9,11 +9,19 @@ export default function Settlement() {
   const [error, setError] = useState('')
   const [closeYm, setCloseYm] = useState('')
   const [filterYm, setFilterYm] = useState('')
+  const [filterCp, setFilterCp] = useState('')
 
   const periods = useQuery({ queryKey: ['periods'], queryFn: () => api.get<Period[]>('/api/settlement/periods') })
+  const parties = useQuery({ queryKey: ['parties'], queryFn: () => api.get<Party[]>('/api/parties') })
   const statements = useQuery({
-    queryKey: ['statements', filterYm],
-    queryFn: () => api.get<StatementSummary[]>(`/api/settlement/statements${filterYm ? `?yearMonth=${filterYm}` : ''}`),
+    queryKey: ['statements', filterYm, filterCp],
+    queryFn: () => {
+      const q = new URLSearchParams()
+      if (filterYm) q.set('yearMonth', filterYm)
+      if (filterCp) q.set('counterpartyId', filterCp)
+      const qs = q.toString()
+      return api.get<StatementSummary[]>(`/api/settlement/statements${qs ? `?${qs}` : ''}`)
+    },
   })
 
   const close = useMutation({
@@ -54,12 +62,20 @@ export default function Settlement() {
       <Card
         title="정산서"
         actions={
-          <div className="w-40">
-            <Select value={filterYm} onChange={(e) => setFilterYm(e.target.value)}>
-              <option value="">전체 기간</option>
-              {periods.data?.map((p) => <option key={p.id} value={p.yearMonth}>{p.yearMonth}</option>)}
-            </Select>
-          </div>
+          <>
+            <div className="w-40">
+              <Select value={filterCp} onChange={(e) => setFilterCp(e.target.value)}>
+                <option value="">모든 상대방</option>
+                {parties.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </Select>
+            </div>
+            <div className="w-40">
+              <Select value={filterYm} onChange={(e) => setFilterYm(e.target.value)}>
+                <option value="">전체 기간</option>
+                {periods.data?.map((p) => <option key={p.id} value={p.yearMonth}>{p.yearMonth}</option>)}
+              </Select>
+            </div>
+          </>
         }
       >
         <Table head={['기간', '상대방', '종류', '버전', '이월 잔액', '당기 발생', '입금/지급', '기말 잔액']}>

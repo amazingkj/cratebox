@@ -5,8 +5,9 @@ import {
   type Me, type PortalLedgerRow, type PortalStatement, type PortalStatementDetail,
   type PortalStockRow, type PortalSummary,
 } from '../api'
-import { Button, Card, Money, Stamp, Table } from '../ui'
+import { Button, Card, IssuerLine, Money, Stamp, Table } from '../ui'
 import { downloadCsv } from '../csv'
+import { PasswordCard } from './Settings'
 
 const ENTRY_LABEL: Record<string, string> = {
   SALE: '판매', SALE_RETURN: '반품', PURCHASE: '매입', PURCHASE_RETURN: '매입반품',
@@ -120,6 +121,8 @@ function PortalHome() {
         </Table>
       </Card>
 
+      <PasswordCard />
+
       <Card title="최근 거래 내역">
         <Table head={['일자', '구분', '품목', '수량', '금액', '정산월']}>
           {ledger.data?.slice(0, 50).map((r, i) => (
@@ -153,7 +156,7 @@ function PortalStatementPage() {
 
   if (st.isLoading) return <p className="text-stone-400">불러오는 중…</p>
   if (!st.data) return <p className="text-stone-400">정산서가 없습니다</p>
-  const { header: h, lines } = st.data
+  const { header: h, issuer, lines } = st.data
 
   function saveCsv() {
     const rows: (string | number | null | undefined)[][] = lines.map((l) => [
@@ -186,6 +189,7 @@ function PortalStatementPage() {
           <Button variant="ghost" onClick={() => window.print()}>인쇄</Button>
         </div>
       </div>
+      <IssuerLine issuer={issuer} />
 
       <Card>
         <div className={`grid grid-cols-2 gap-3 text-sm ${h.advanceTotal !== 0 ? 'sm:grid-cols-6' : 'sm:grid-cols-5'}`}>

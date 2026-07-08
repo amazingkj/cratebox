@@ -2,19 +2,22 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
-  api, ApiError, DOC_TYPE_LABEL,
+  api, ApiError, DOC_TYPE_LABEL, todayLocal,
   type DocType, type Location, type Party, type Period, type SkuFlat, type StockDoc,
 } from '../api'
 import { Button, Card, Field, Input, Select } from '../ui'
 
-const PRICED: DocType[] = ['PURCHASE_IN', 'PURCHASE_RETURN', 'SALE_OUT', 'CUSTOMER_RETURN', 'SALES_REPORT']
+const PRICED: DocType[] = ['PURCHASE_IN', 'PURCHASE_RETURN', 'SALE_OUT', 'CUSTOMER_RETURN', 'SALES_REPORT',
+  'DIRECT_SALE']
 const NEGATIVE_OK: DocType[] = ['ADJUST', 'SALES_REPORT']
 const RESTATABLE: DocType[] = ['PURCHASE_RETURN', 'CUSTOMER_RETURN', 'SALES_REPORT']
 // 상대방이 기획사인 문서
 const LABEL_DOCS: DocType[] = ['PURCHASE_IN', 'PURCHASE_RETURN', 'CONSIGN_IN', 'RETURN_TO_OWNER']
+// 상대방이 없는 문서
+const NO_PARTY: DocType[] = ['TRANSFER', 'ADJUST', 'OPENING', 'DIRECT_SALE']
 // 라인에서 재고 구분(자사/위탁)을 고를 수 있는 문서 (수탁입고/반납은 상대방으로 자동 결정)
 const OWNERABLE: DocType[] = ['SALE_OUT', 'CUSTOMER_RETURN', 'CONSIGN_PLACE', 'SALES_REPORT',
-  'CONSIGN_RECALL', 'TRANSFER', 'ADJUST', 'OPENING']
+  'CONSIGN_RECALL', 'TRANSFER', 'ADJUST', 'OPENING', 'DIRECT_SALE']
 
 // 문서 유형별 상대방 조건
 function partyFilter(t: DocType): (p: Party) => boolean {
@@ -50,6 +53,7 @@ const LOC_RULE: Record<DocType, { fromWh?: boolean; toWh?: boolean; store?: 'fro
   OPENING: { toWh: true },
   CONSIGN_IN: { toWh: true },
   RETURN_TO_OWNER: { fromWh: true },
+  DIRECT_SALE: { fromWh: true },
 }
 
 // 문서 유형별 한 줄 안내 (처음 쓰는 사람이 유형을 고를 수 있도록)
@@ -66,6 +70,7 @@ const DOC_TYPE_DESC: Record<DocType, string> = {
   OPENING: '시스템 도입 시점의 기초 재고를 등록합니다.',
   CONSIGN_IN: '기획사 소유 음반을 위탁으로 받아 창고에 보관합니다. 판매되기 전까지는 정산이 생기지 않습니다.',
   RETURN_TO_OWNER: '보관 중인 위탁 재고를 기획사에 돌려보냅니다.',
+  DIRECT_SALE: '행사·팝업에서 소비자에게 직접 판매합니다. 재고가 차감되고 위탁 음반은 기획사 정산에 반영되며, 현장에서 받은 돈은 정산 잔액에 잡히지 않습니다. 현장에서는 [현장판매] 메뉴가 더 편합니다.',
 }
 
 interface LineDraft { skuId: string; qty: string; unitPrice: string; owner: string; note: string }
@@ -77,10 +82,11 @@ export default function DocNew() {
   const [counterpartyId, setCounterpartyId] = useState('')
   const [fromWh, setFromWh] = useState('')
   const [toWh, setToWh] = useState('')
-  const [occurredOn, setOccurredOn] = useState(new Date().toISOString().slice(0, 10))
+  const [occurredOn, setOccurredOn] = useState(todayLocal())
   const [restate, setRestate] = useState('')
   const [memo, setMemo] = useState('')
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()])
+  const [barcode, setBarcode] = useState('')
   const [error, setError] = useState('')
 
   const parties = useQuery({ queryKey: ['parties'], queryFn: () => api.get<Party[]>('/api/parties') })
@@ -91,7 +97,7 @@ export default function DocNew() {
   const rule = LOC_RULE[docType]
   const priced = PRICED.includes(docType)
   const consignDoc = docType === 'CONSIGN_IN' || docType === 'RETURN_TO_OWNER'
-  const needsParty = partyFilter(docType) !== undefined && !['TRANSFER', 'ADJUST', 'OPENING'].includes(docType)
+  const needsParty = !NO_PARTY.includes(docType)
   const eligibleParties = useMemo(
     () => (parties.data ?? []).filter(partyFilter(docType)).filter((p) => p.active),
     [parties.data, docType],
@@ -112,6 +118,35 @@ export default function DocNew() {
 
   function setLine(i: number, patch: Partial<LineDraft>) {
     setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)))
+  }
+
+  // 이 문서 유형에서 선택 가능한 SKU (수탁입고/반납은 상대 기획사의 위탁 계약 앨범만)
+  const eligibleSkus = (skus.data ?? []).filter((s) => s.active).filter((s) =>
+    consignDoc
+      ? String(s.labelPartyId) === counterpartyId && s.agreementKind === 'CONSIGNMENT'
+      : true)
+
+  /** 바코드 입력/스캔 → 라인 추가. 이미 담긴 품목이면 수량 +1 */
+  function quickAdd() {
+    const code = barcode.trim()
+    if (!code) return
+    const s = eligibleSkus.find((x) => x.barcode === code)
+    if (!s) {
+      setError(`등록되지 않은 바코드입니다: ${code}`)
+      return
+    }
+    setError('')
+    setBarcode('')
+    setLines((ls) => {
+      const i = ls.findIndex((l) => l.skuId === String(s.id))
+      if (i >= 0) return ls.map((l, j) => (j === i ? { ...l, qty: String((Number(l.qty) || 0) + 1) } : l))
+      // 위탁 계약 앨범은 위탁 풀이 기본 (현장판매 화면과 동일 규칙) — 자사 판매면 라인에서 바꾼다
+      const owner = !consignDoc && OWNERABLE.includes(docType) && s.agreementKind === 'CONSIGNMENT'
+        ? String(s.labelPartyId) : ''
+      const line: LineDraft = { skuId: String(s.id), qty: '1', unitPrice: defaultPrice(s), owner, note: '' }
+      const empty = ls.findIndex((l) => !l.skuId)
+      return empty >= 0 ? ls.map((l, j) => (j === empty ? line : l)) : [...ls, line]
+    })
   }
 
   function buildPayload() {
@@ -227,14 +262,17 @@ export default function DocNew() {
         title="품목"
         actions={<Button variant="ghost" onClick={() => setLines((ls) => [...ls, emptyLine()])}>+ 품목 추가</Button>}
       >
+        <div className="mb-3 max-w-sm">
+          <Input
+            placeholder="바코드로 추가 — 스캔/입력 후 Enter" value={barcode} inputMode="numeric"
+            onChange={(e) => setBarcode(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); quickAdd() } }}
+          />
+        </div>
         <div className="space-y-2">
           {lines.map((l, i) => {
             const sku = skus.data?.find((s) => String(s.id) === l.skuId)
-            // 수탁입고/반납은 상대 기획사의 위탁 계약 앨범만
-            const skuOptions = (skus.data ?? []).filter((s) => s.active).filter((s) =>
-              consignDoc
-                ? String(s.labelPartyId) === counterpartyId && s.agreementKind === 'CONSIGNMENT'
-                : true)
+            const skuOptions = eligibleSkus
             const ownerable = OWNERABLE.includes(docType) && sku?.agreementKind === 'CONSIGNMENT'
             return (
               <div key={i} className="grid grid-cols-12 gap-2 items-center">
@@ -268,7 +306,7 @@ export default function DocNew() {
                 {priced && (
                   <div className="col-span-5 sm:col-span-2">
                     <Input
-                      type="number" placeholder="공급단가(VAT별도)" value={l.unitPrice}
+                      type="number" placeholder="단가(VAT별도)" value={l.unitPrice}
                       onChange={(e) => setLine(i, { unitPrice: e.target.value })}
                     />
                   </div>

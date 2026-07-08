@@ -8,3 +8,5 @@ spring:
 
 cratebox:
   admin-password: admin1234!
+  https:
+    enabled: false   # 테스트 컨텍스트가 8443을 물지 않도록 (개발 서버와 충돌 방지)

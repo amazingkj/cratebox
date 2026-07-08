@@ -30,6 +30,7 @@
 | 위탁 거래처반품 (라인 owner=기획사) | `+qty (owner=기획사)` | 거래처 `−`, 기획사 `CONSIGN_RETURN` `+기획사몫` | ② |
 | 위탁 반납 `RETURN_TO_OWNER` | `−qty @창고 (owner=기획사)` | — | ② |
 | MG 회수 `ADVANCE_RECOUP` | — | 기획사 `+` (마감 시 해당 앨범 위탁 정산액에서 자동 차감, `advance_id` 참조) | ② |
+| 현장판매 `DIRECT_SALE` (상대방 없음) | `−qty @창고 (owner 라인별)` | 자사 라인 — (현장 수금, 채권 없음) / 위탁 라인 기획사 `CONSIGN_SALE` `−기획사몫` | ②+ |
 
 기획사몫 = **절사(|공급가액| × (1 − 수수료율))** + 그에 대한 VAT. 기획사 엔트리는 단가 미기록.
 위탁 판매 1건의 정산 엔트리 합 = 유통사 수수료 마진이 원장에서 그대로 읽힌다.
@@ -321,6 +322,11 @@ create trigger settlement_entry_append_only
 - `app_user.role`(ADMIN|LABEL) + `party_id` — 기획사 포털(읽기전용, `/api/portal/*`, party 스코프).
 
 마감 순서: 도장(stamping) → **MG 회수**(앨범 단위, 오래된 선급금부터, 같은 close 내 이중 회수 방지) → 정산서 생성. 소급 정정이 마감된 기간의 위탁 정산액을 바꿔도 회수는 재계산하지 않는다(합계 정합 유지, MG 조기 회수만 발생 — 명시된 단순화).
+
+### ②+ 후속 (V4)
+
+- `org` 회사 정보 컬럼(biz_reg_no·ceo_name·address·phone·email) — 정산서 상세 응답의 `issuer`로 노출(운영·포털 공통), 조회 시점 값(정산서에 스냅샷하지 않음 — 명시 단순화).
+- `stock_doc.doc_type`에 `DIRECT_SALE` 추가 — 현장판매. 상대방 없음(현장 수금이라 채권 미발생), 위탁 라인만 `CONSIGN_SALE` 기획사몫 전기. 역분개·마감·MG 회수는 기존 메커니즘 그대로.
 
 ## 6. Phase ③ 확장 (스키마 델타 예고)
 

@@ -1,19 +1,27 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { api, DOC_TYPE_LABEL, fmt, type DocSummary, type DocType } from '../api'
-import { Badge, Button, Card, Select, Table } from '../ui'
+import { api, DOC_TYPE_LABEL, fmt, type DocSummary, type DocType, type Party } from '../api'
+import { Badge, Button, Card, Input, Select, Table } from '../ui'
 
 export default function Docs() {
   const [docType, setDocType] = useState('')
   const [status, setStatus] = useState('')
+  const [cp, setCp] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  // 목록은 서버에서 최신 500건까지만 내려오므로 필터도 서버에서 적용해야 옛 문서가 검색된다
   const q = new URLSearchParams()
   if (docType) q.set('docType', docType)
   if (status) q.set('status', status)
+  if (cp) q.set('counterpartyId', cp)
+  if (from) q.set('from', from)
+  if (to) q.set('to', to)
   const docs = useQuery({
-    queryKey: ['docs', docType, status],
+    queryKey: ['docs', docType, status, cp, from, to],
     queryFn: () => api.get<DocSummary[]>(`/api/docs?${q.toString()}`),
   })
+  const parties = useQuery({ queryKey: ['parties'], queryFn: () => api.get<Party[]>('/api/parties') })
 
   return (
     <div className="space-y-4">
@@ -37,6 +45,17 @@ export default function Docs() {
             <option value="POSTED">확정</option>
             <option value="REVERSED">취소됨</option>
           </Select>
+        </div>
+        <div className="w-40">
+          <Select value={cp} onChange={(e) => setCp(e.target.value)}>
+            <option value="">모든 상대방</option>
+            {parties.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Select>
+        </div>
+        <div className="flex items-center gap-1">
+          <Input type="date" className="w-36" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <span className="text-stone-400">~</span>
+          <Input type="date" className="w-36" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
       </div>
       <Card>
